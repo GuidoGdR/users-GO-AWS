@@ -20,8 +20,9 @@ func GetUser(ctx context.Context, dbSvc *dynamodb.Client, tableName string, emai
 	}
 
 	input := &dynamodb.GetItemInput{
-		TableName: aws.String(tableName),
-		Key:       key,
+		TableName:      aws.String(tableName),
+		Key:            key,
+		ConsistentRead: aws.Bool(true),
 	}
 
 	result, err := dbSvc.GetItem(ctx, input)
