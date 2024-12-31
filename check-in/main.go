@@ -66,49 +66,28 @@ func HandleRequest(ctx context.Context, event events.APIGatewayProxyRequest) (ev
 		return internalTools.Response(400, body), nil
 	}
 
-	var user = internalTools.User{}
+	claims, ok := tkn.Claims.(*internalTools.ConfirmationJWTClaims)
 
-	if claims, ok := tkn.Claims.(*internalTools.ConfirmationJWTClaims); !ok || !tkn.Valid {
+	if !ok || !tkn.Valid {
 
 		body, _ := internalTools.MakeErrorBody("Token invalido", "no se pudo validar el token", "token")
 		return internalTools.Response(400, body), nil
-
-	} else {
-
-		// get user
-		result, err := internalTools.GetUser(ctx, dbSvc, usersTableName, claims.Email)
-		if err != nil {
-
-			log.Print("Error al intentar obtener el usuario.\n", err)
-			body, _ := internalTools.MakeErrorBody("Error interno", "Error al intentar obtener el usuario.", "")
-			return internalTools.Response(500, body), err
-		}
-		if result == nil {
-
-			body, _ := internalTools.MakeErrorBody("Token invalido", "no se pudo validar el token", "token")
-			return internalTools.Response(400, body), nil
-		}
-
-		if result.VerifiedEmail {
-
-			// the user is verified
-			body, _ := internalTools.MakeErrorBody("Token invalido", "no se pudo validar el token", "token")
-			return internalTools.Response(400, body), nil
-		}
-
-		user = *result
-
 	}
 
 	// update "verifiedEmail"
-	if errMsg, err := updateVerifiedEmail(ctx, user.Email); err != nil {
+	if userDontExist, errMsg, err := updateVerifiedEmail(ctx, claims.Email); userDontExist {
+
+		body, _ := internalTools.MakeErrorBody("Token invalido", "no se pudo validar el token", "token")
+		return internalTools.Response(400, body), err
+
+	} else if err != nil {
 
 		log.Print(fmt.Sprintf("%s\n", errMsg), err)
 		body, _ := internalTools.MakeErrorBody("Error interno", errMsg, "")
 		return internalTools.Response(500, body), err
 	}
 
-	jsonResp, _ := json.Marshal(map[string]string{"message": fmt.Sprintf("Email %s confirmado correctamente", user.Email)})
+	jsonResp, _ := json.Marshal(map[string]string{"message": fmt.Sprintf("Email %s confirmado correctamente", claims.Email)})
 
 	return internalTools.Response(200, string(jsonResp)), nil
 }

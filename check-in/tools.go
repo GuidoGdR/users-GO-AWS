@@ -4,6 +4,7 @@ import (
 	// base
 
 	"context"
+	"errors"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 
@@ -12,7 +13,7 @@ import (
 	dynamodbTypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
-func updateVerifiedEmail(ctx context.Context, email string) (string, error) {
+func updateVerifiedEmail(ctx context.Context, email string) (bool, string, error) {
 
 	// key
 	key, err := attributevalue.MarshalMap(map[string]interface{}{
@@ -20,7 +21,7 @@ func updateVerifiedEmail(ctx context.Context, email string) (string, error) {
 	})
 	if err != nil {
 
-		return "Error al construir la expresión para actualizar el usuario.", err
+		return false, "Error al construir la expresión para actualizar el usuario.", err
 	}
 
 	// make input
@@ -34,13 +35,22 @@ func updateVerifiedEmail(ctx context.Context, email string) (string, error) {
 		ExpressionAttributeValues: map[string]dynamodbTypes.AttributeValue{
 			":val": &dynamodbTypes.AttributeValueMemberBOOL{Value: true},
 		},
+		ConditionExpression: aws.String("attribute_exists(email)"),
 	}
 
 	// update
 	_, err = dbSvc.UpdateItem(ctx, input)
 	if err != nil {
-		return "Error al actualizar el usuario.", err
+
+		//2
+		var conditionalCheckFailedException *dynamodbTypes.ConditionalCheckFailedException
+		if errors.As(err, &conditionalCheckFailedException) {
+
+			return true, "El usuario no existe.", err // user dont exist
+		}
+
+		return false, "Error al actualizar el usuario.", err
 	}
 
-	return "", nil
+	return false, "", nil
 }
