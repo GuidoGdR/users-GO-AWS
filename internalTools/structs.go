@@ -11,7 +11,7 @@ type User struct {
 	FirstName string `dynamodbav:"first_name" json:"first_name"`
 	LastName  string `dynamodbav:"last_name" json:"last_name"`
 
-	VerifiedEmail bool `dynamodbav:"verified_email" json:"verified_email"`
+	EmailVerified bool `dynamodbav:"email_verified" json:"email_verified"`
 }
 
 type ConfirmationJWTClaims struct {
