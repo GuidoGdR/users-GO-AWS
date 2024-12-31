@@ -51,7 +51,7 @@ func HandleRequest(ctx context.Context, event events.APIGatewayProxyRequest) (ev
 		return internalTools.Response(401, body), nil
 	}
 
-	user, err := internalTools.GetUser(ctx, dbSvc, usersTableName, req.Email)
+	user, err := getUser(ctx, req.Email)
 	if err != nil {
 
 		log.Print("Error al obtener el usuario.\n", err)
@@ -59,7 +59,7 @@ func HandleRequest(ctx context.Context, event events.APIGatewayProxyRequest) (ev
 		return internalTools.Response(500, body), err
 	}
 
-	if user == nil || !user.VerifiedEmail {
+	if user == nil || !user.EmailVerified {
 
 		body, _ := internalTools.MakeErrorBody("Credenciales incorrectas", "Email y/o contraseña invalidos", "email y/o password")
 		return internalTools.Response(401, body), nil
