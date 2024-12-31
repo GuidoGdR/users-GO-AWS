@@ -107,11 +107,11 @@ func HandleRequest(ctx context.Context, event events.APIGatewayProxyRequest) (ev
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
 
-		VerifiedEmail: false,
+		EmailVerified: false,
 	}
 
 	// check duplicates
-	preUser, err := internalTools.GetUser(ctx, dbSvc, usersTableName, newUser.Email)
+	smallUser, err := getUser(ctx, newUser.Email)
 
 	if err != nil {
 
@@ -121,29 +121,26 @@ func HandleRequest(ctx context.Context, event events.APIGatewayProxyRequest) (ev
 
 	}
 
-	if preUser != nil {
+	if smallUser != nil {
 
-		// have a preUser
-		if preUser.VerifiedEmail {
+		// have a previous User
+		if smallUser.EmailVerified {
 
 			body, _ := internalTools.MakeErrorBody("Email no disponible.", "Ya existe una cuenta vinculada a ese email.", "email")
 			return internalTools.Response(400, body), nil
 		}
-		// preUser not verified
+		// previous User not verified
 
-		if preUser.PasswordHash != newUser.PasswordHash {
+		if smallUser.PasswordHash != newUser.PasswordHash {
 
 			// uptade pasword
-
-			preUser.PasswordHash = newUser.PasswordHash
-			newUser = *preUser
-
-			if errorText, err := updatePassword(ctx, newUser); err != nil {
+			if errorText, err := updatePassword(ctx, newUser.Email, newUser.PasswordHash); err != nil {
 
 				log.Print(fmt.Sprintf("%s\n", errorText), err)
 				body, _ := internalTools.MakeErrorBody("Error interno", errorText, "")
 				return internalTools.Response(500, body), err
 			}
+			smallUser.PasswordHash = newUser.PasswordHash
 		}
 
 	} else {

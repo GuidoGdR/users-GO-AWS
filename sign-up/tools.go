@@ -129,11 +129,11 @@ func sendConfirmationToEmail(ctx context.Context, user internalTools.User, url s
 	return nil
 }
 
-func updatePassword(ctx context.Context, user internalTools.User) (string, error) {
+func updatePassword(ctx context.Context, email string, password string) (string, error) {
 
 	// key
 	key, err := attributevalue.MarshalMap(map[string]interface{}{
-		"email": user.Email,
+		"email": email,
 	})
 	if err != nil {
 
@@ -149,7 +149,7 @@ func updatePassword(ctx context.Context, user internalTools.User) (string, error
 			"#p": "password",
 		},
 		ExpressionAttributeValues: map[string]dynamodbTypes.AttributeValue{
-			":val": &dynamodbTypes.AttributeValueMemberS{Value: user.PasswordHash},
+			":val": &dynamodbTypes.AttributeValueMemberS{Value: password},
 		},
 	}
 
@@ -160,4 +160,39 @@ func updatePassword(ctx context.Context, user internalTools.User) (string, error
 	}
 
 	return "", nil
+}
+
+func getUser(ctx context.Context, email string) (*smallUser, error) {
+
+	key, err := attributevalue.MarshalMap(map[string]interface{}{
+		"email": email,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	input := &dynamodb.GetItemInput{
+		TableName:            aws.String(usersTableName),
+		Key:                  key,
+		ConsistentRead:       aws.Bool(true),
+		ProjectionExpression: aws.String("email,password,email_verified"),
+	}
+
+	result, err := dbSvc.GetItem(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+
+	if result.Item == nil {
+		return nil, nil
+	}
+
+	var user smallUser
+	err = attributevalue.UnmarshalMap(result.Item, &user)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }

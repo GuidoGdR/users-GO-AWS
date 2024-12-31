@@ -9,3 +9,11 @@ type Request struct {
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 }
+
+type smallUser struct {
+	Email string `dynamodbav:"email" json:"email"`
+
+	PasswordHash string `dynamodbav:"password" json:"password"`
+
+	EmailVerified bool `dynamodbav:"email_verified" json:"email_verified"`
+}
