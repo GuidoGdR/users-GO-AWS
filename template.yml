@@ -34,7 +34,7 @@ Resources:
           CONFIRMATION_URL: !Sub "https://www.your_web.com/check-in"
       Events: # API Gateway integration
         Api:
-          Type: Api
+          Type: HttpApi
           Properties:
             Path: /sign-up
             Method: post
@@ -66,7 +66,7 @@ Resources:
 
       Events: # API Gateway integration
         Api:
-          Type: Api
+          Type: HttpApi
           Properties:
             Path: /check-in
             Method: get
@@ -94,7 +94,7 @@ Resources:
 
       Events: # API Gateway integration
         Api:
-          Type: Api
+          Type: HttpApi
           Properties:
             Path: /login
             Method: post
