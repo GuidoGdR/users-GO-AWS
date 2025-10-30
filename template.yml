@@ -1,0 +1,104 @@
+Transform: AWS::Serverless-2016-10-31 # (SAM)
+
+Resources:
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Users
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: email 
+          KeyType: HASH # pk
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S # S = String (cadena de texto)
+
+
+  SignUp:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      FunctionName: sign-up
+      Handler: bootstrap
+      Runtime: provided.al2
+      CodeUri: sign-up/ # api folder
+      MemorySize: 128 # RAM in MB
+      Timeout: 10 # Max time execution in seconds
+      Environment: # Env vars
+        Variables:
+          USERS_TABLE: !Ref UsersTable
+          SENDER_EMAIL_ADDRESS: "guidodorego@gmail.com"
+          JWT_SECRET_2: "SecondarySecretJWT0000VDFD45353E3534"
+          TURNSTILE_SECRET_KEY: "TurnstileKey0000fre434g5fgrfed43"
+          CONFIRMATION_URL: !Sub "https://www.your_web.com/check-in"
+      Events: # API Gateway integration
+        Api:
+          Type: Api
+          Properties:
+            Path: /sign-up
+            Method: post
+      Policies:
+        - Statement:
+            Effect: Allow
+            Action: ses:SendEmail # O ses:SendRawEmail si usas un formato más complejo
+            Resource: !Sub "arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/guidodorego@gmail.com" # Need verify your email in aws
+
+        - DynamoDBWritePolicy:
+            TableName: !Ref UsersTable
+
+  CheckIn:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      FunctionName: check-in
+      Handler: bootstrap
+      Runtime: provided.al2
+      CodeUri: check-in/
+      MemorySize: 128
+      Timeout: 10
+
+      Environment: # Env vars
+        Variables:
+          USERS_TABLE: !Ref UsersTable
+          JWT_SECRET_2: "SecondarySecretJWT0000VDFD45353E3534"
+
+      Events: # API Gateway integration
+        Api:
+          Type: Api
+          Properties:
+            Path: /check-in
+            Method: get
+
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: !Ref UsersTable
+
+  Login:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      FunctionName: login
+      Handler: bootstrap
+      Runtime: provided.al2
+      CodeUri: login/
+      MemorySize: 128
+      Timeout: 10
+
+      Environment: # Env vars
+        Variables:
+          USERS_TABLE: !Ref UsersTable
+          JWT_SECRET: "PrincipalSecretJWT0000VDFDE3534"
+
+      Events: # API Gateway integration
+        Api:
+          Type: Api
+          Properties:
+            Path: /login
+            Method: post
+
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref UsersTable
