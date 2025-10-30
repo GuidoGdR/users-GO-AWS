@@ -28,14 +28,15 @@ func updateVerifiedEmail(ctx context.Context, email string) (bool, string, error
 	input := &dynamodb.UpdateItemInput{
 		TableName:        aws.String(usersTableName),
 		Key:              key,
-		UpdateExpression: aws.String("set #ve = :val"),
+		UpdateExpression: aws.String("set #ve = :t"),
 		ExpressionAttributeNames: map[string]string{
 			"#ve": "verified_email",
 		},
 		ExpressionAttributeValues: map[string]dynamodbTypes.AttributeValue{
-			":val": &dynamodbTypes.AttributeValueMemberBOOL{Value: true},
+			":t": &dynamodbTypes.AttributeValueMemberBOOL{Value: true},
+			":f": &dynamodbTypes.AttributeValueMemberBOOL{Value: false},
 		},
-		ConditionExpression: aws.String("attribute_exists(email)"),
+		ConditionExpression: aws.String("#ve = :f"),
 	}
 
 	// update
@@ -46,7 +47,7 @@ func updateVerifiedEmail(ctx context.Context, email string) (bool, string, error
 		var conditionalCheckFailedException *dynamodbTypes.ConditionalCheckFailedException
 		if errors.As(err, &conditionalCheckFailedException) {
 
-			return true, "El usuario no existe.", err // user dont exist
+			return true, "El usuario no existe o el email ya ha sido verificado.", err // user dont exist
 		}
 
 		return false, "Error al actualizar el usuario.", err
