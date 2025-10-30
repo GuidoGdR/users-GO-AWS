@@ -28,7 +28,7 @@ Resources:
       Environment: # Env vars
         Variables:
           USERS_TABLE: !Ref UsersTable
-          SENDER_EMAIL_ADDRESS: "guidodorego@gmail.com"
+          SENDER_EMAIL_ADDRESS: "your_email@email.com"
           JWT_SECRET_2: "SecondarySecretJWT0000VDFD45353E3534"
           TURNSTILE_SECRET_KEY: "TurnstileKey0000fre434g5fgrfed43"
           CONFIRMATION_URL: !Sub "https://www.your_web.com/check-in"
@@ -42,7 +42,7 @@ Resources:
         - Statement:
             Effect: Allow
             Action: ses:SendEmail # O ses:SendRawEmail si usas un formato más complejo
-            Resource: !Sub "arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/guidodorego@gmail.com" # Need verify your email in aws
+            Resource: !Sub "arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/your_email@email.com" # Need verify your email in aws
 
         - DynamoDBWritePolicy:
             TableName: !Ref UsersTable
