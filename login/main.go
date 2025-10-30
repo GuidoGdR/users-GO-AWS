@@ -59,7 +59,7 @@ func HandleRequest(ctx context.Context, event events.APIGatewayProxyRequest) (ev
 		return internalTools.Response(500, body), err
 	}
 
-	if user == nil || !user.EmailVerified {
+	if user == nil || !user.VerifiedEmail {
 
 		body, _ := internalTools.MakeErrorBody("Credenciales incorrectas", "Email y/o contraseña invalidos", "email y/o password")
 		return internalTools.Response(401, body), nil

@@ -15,5 +15,5 @@ type smallUser struct {
 
 	PasswordHash string `dynamodbav:"password" json:"password"`
 
-	EmailVerified bool `dynamodbav:"email_verified" json:"email_verified"`
+	EmailVerified bool `dynamodbav:"verified_email" json:"verified_email"`
 }

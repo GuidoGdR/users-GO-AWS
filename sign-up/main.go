@@ -107,7 +107,7 @@ func HandleRequest(ctx context.Context, event events.APIGatewayProxyRequest) (ev
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
 
-		EmailVerified: false,
+		VerifiedEmail: false,
 	}
 
 	// check duplicates

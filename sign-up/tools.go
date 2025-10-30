@@ -176,7 +176,7 @@ func getUser(ctx context.Context, email string) (*smallUser, error) {
 		TableName:            aws.String(usersTableName),
 		Key:                  key,
 		ConsistentRead:       aws.Bool(true),
-		ProjectionExpression: aws.String("email,password,email_verified"),
+		ProjectionExpression: aws.String("email,password,verified_email"),
 	}
 
 	result, err := dbSvc.GetItem(ctx, input)
