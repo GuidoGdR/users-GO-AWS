@@ -1,5 +1,29 @@
 Transform: AWS::Serverless-2016-10-31 # (SAM)
 
+Parameters:
+  # SENDER_EMAIL_ADDRESS
+  SenderEmailAddress:
+    Type: String
+    Description: Dirección de correo verificada en AWS SES que usará la Lambda para enviar emails.
+    Default: ''
+  
+  # TURNSTILE_SECRET_KEY
+  TurstileSecretKey:
+    Type: String
+    Description: Secreto de Turstile.
+    Default: ''
+  
+  # apis urls
+  ApisUrl:
+    Type: String
+    Description: Url de las apis (se usa solo para construir la url que se envia por email al registrarse).
+    Default: 'https://www.your_web.com/api/'
+  
+   
+Conditions:
+  ShouldEnableSES: !Not [!Equals [!Ref SenderEmailAddress, '']]
+
+
 Resources:
   UsersTable:
     Type: AWS::DynamoDB::Table
@@ -28,22 +52,32 @@ Resources:
       Environment: # Env vars
         Variables:
           USERS_TABLE: !Ref UsersTable
-          SENDER_EMAIL_ADDRESS: "your_email@email.com"
-          JWT_SECRET_2: "SecondarySecretJWT0000VDFD45353E3534"
-          TURNSTILE_SECRET_KEY: "TurnstileKey0000fre434g5fgrfed43"
-          CONFIRMATION_URL: !Sub "https://www.your_web.com/check-in"
+          SENDER_EMAIL_ADDRESS: !Ref SenderEmailAddress
+          JWT_SECRET_2: "SecondaryInsecureSecretJWT0000VDFD45353E3534"
+          TURNSTILE_SECRET_KEY: !Ref TurstileSecretKey
+          
+          CONFIRMATION_URL: !Sub ApisUrl + "/sign-up"
       Events: # API Gateway integration
-        Api:
+        Api:  
           Type: HttpApi
           Properties:
             Path: /sign-up
             Method: post
       Policies:
-        - Statement:
-            Effect: Allow
-            Action: ses:SendEmail # O ses:SendRawEmail si usas un formato más complejo
-            Resource: !Sub "arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/your_email@email.com" # Need verify your email in aws
-
+        - !If [
+            ShouldEnableSES,
+            # Valor si la condición es TRUE (Incluir política SES)
+            {
+              Statement: {
+                Effect: Allow,
+                Action: "ses:SendEmail",  # O ses:SendRawEmail si usas un formato más complejo
+                Resource: !Sub "arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/${SenderEmailAddress}"
+              }
+            },
+            # Valor si la condición es FALSE (Omitir la política)
+            !Ref AWS::NoValue
+          ]
+          
         - DynamoDBWritePolicy:
             TableName: !Ref UsersTable
 
@@ -62,7 +96,7 @@ Resources:
       Environment: # Env vars
         Variables:
           USERS_TABLE: !Ref UsersTable
-          JWT_SECRET_2: "SecondarySecretJWT0000VDFD45353E3534"
+          JWT_SECRET_2: "SecondaryInsecureSecretJWT0000VDFD45353E3534"
 
       Events: # API Gateway integration
         Api:
@@ -90,7 +124,7 @@ Resources:
       Environment: # Env vars
         Variables:
           USERS_TABLE: !Ref UsersTable
-          JWT_SECRET: "PrincipalSecretJWT0000VDFDE3534"
+          JWT_SECRET: "PrimaryInsecureSecretJWT0000VDFD45353E3534"
 
       Events: # API Gateway integration
         Api:
