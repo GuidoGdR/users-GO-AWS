@@ -56,7 +56,7 @@ Resources:
           JWT_SECRET_2: "SecondaryInsecureSecretJWT0000VDFD45353E3534"
           TURNSTILE_SECRET_KEY: !Ref TurstileSecretKey
           
-          CONFIRMATION_URL: !Sub ApisUrl + "/sign-up"
+          CONFIRMATION_URL: !Sub ApisUrl + "/check-in"
       Events: # API Gateway integration
         Api:  
           Type: HttpApi
