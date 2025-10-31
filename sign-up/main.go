@@ -44,9 +44,6 @@ var turnstileKey string
 var confirmationUrl string
 
 func HandleRequest(ctx context.Context, event events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	// Logs
-	log.SetPrefix("sign-up ")
-	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
 	// validate request
 	var req Request
@@ -66,25 +63,27 @@ func HandleRequest(ctx context.Context, event events.APIGatewayProxyRequest) (ev
 	}
 
 	// validate is_human
-	if len(req.IsHuman) < 50 {
+	if turnstileKey != "" {
+		if len(req.IsHuman) < 50 {
 
-		body, _ := internalTools.MakeErrorBody("Token invalido", "No se pudo validar que no sea un robot.", "is_human")
-		return internalTools.Response(400, body), nil
-	}
+			body, _ := internalTools.MakeErrorBody("Token invalido", "No se pudo validar que no sea un robot.", "is_human")
+			return internalTools.Response(400, body), nil
+		}
 
-	isHuman, errMsg, err := validateIsHuman(req.IsHuman)
+		isHuman, errMsg, err := validateIsHuman(req.IsHuman)
 
-	if err != nil {
+		if err != nil {
 
-		log.Print(fmt.Sprintf("%s\n", errMsg), err)
-		body, _ := internalTools.MakeErrorBody("Error interno", errMsg, "")
-		return internalTools.Response(500, body), err
-	}
+			log.Print(fmt.Sprintf("%s\n", errMsg), err)
+			body, _ := internalTools.MakeErrorBody("Error interno", errMsg, "")
+			return internalTools.Response(500, body), err
+		}
 
-	if !isHuman {
+		if !isHuman {
 
-		body, _ := internalTools.MakeErrorBody("Token invalido", "No se pudo validar que no sea un robot.", "is_human")
-		return internalTools.Response(400, body), nil
+			body, _ := internalTools.MakeErrorBody("Token invalido", "No se pudo validar que no sea un robot.", "is_human")
+			return internalTools.Response(400, body), nil
+		}
 	}
 
 	// make password hash
@@ -179,6 +178,10 @@ func main() {
 }
 
 func init() {
+	// Logs
+	log.SetPrefix("sign-up ")
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
+
 	// Environment Variables
 
 	usersTableName = os.Getenv("USERS_TABLE")
@@ -198,7 +201,7 @@ func init() {
 
 	turnstileKey = os.Getenv("TURNSTILE_SECRET_KEY")
 	if turnstileKey == "" {
-		panic("TURNSTILE_SECRET_KEY environment variable not set")
+		log.Print("Turnstile disabled\n")
 	}
 
 	confirmationUrl = os.Getenv("CONFIRMATION_URL")
