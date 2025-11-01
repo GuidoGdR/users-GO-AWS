@@ -12,14 +12,8 @@ Parameters:
     Type: String
     Description: Secreto de Turstile.
     Default: ''
-  
-  # apis urls
-  ApisUrl:
-    Type: String
-    Description: Url de las apis (se usa solo para construir la url que se envia por email al registrarse).
-    Default: 'https://www.your_web.com/api/'
-  
-   
+
+
 Conditions:
   ShouldEnableSES: !Not [!Equals [!Ref SenderEmailAddress, '']]
 
@@ -37,6 +31,8 @@ Resources:
         - AttributeName: email
           AttributeType: S # S = String (cadena de texto)
 
+  PublicHttpApi: # <- RECURSO DE API GATEWAY EXPLÍCITO
+    Type: AWS::Serverless::HttpApi
 
   SignUp:
     Type: AWS::Serverless::Function
@@ -56,7 +52,8 @@ Resources:
           JWT_SECRET_2: "SecondaryInsecureSecretJWT0000VDFD45353E3534"
           TURNSTILE_SECRET_KEY: !Ref TurstileSecretKey
           
-          CONFIRMATION_URL: !Sub ApisUrl + "/check-in"
+          #CONFIRMATION_URL: "test/check-in/"
+          CONFIRMATION_URL: !Sub "${PublicHttpApi.ApiEndpoint}/check-in/"
       Events: # API Gateway integration
         Api:  
           Type: HttpApi
@@ -64,20 +61,11 @@ Resources:
             Path: /sign-up
             Method: post
       Policies:
-        - !If [
-            ShouldEnableSES,
-            # Valor si la condición es TRUE (Incluir política SES)
-            {
-              Statement: {
-                Effect: Allow,
-                Action: "ses:SendEmail",  # O ses:SendRawEmail si usas un formato más complejo
-                Resource: !Sub "arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/${SenderEmailAddress}"
-              }
-            },
-            # Valor si la condición es FALSE (Omitir la política)
-            !Ref AWS::NoValue
-          ]
-          
+        - Statement: 
+            Effect: Allow
+            Action: "ses:SendEmail"  # O ses:SendRawEmail si usas un formato más complejo
+            Resource: !Sub "arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/${SenderEmailAddress}"
+        
         - DynamoDBWritePolicy:
             TableName: !Ref UsersTable
 
@@ -102,6 +90,7 @@ Resources:
         Api:
           Type: HttpApi
           Properties:
+            ApiId: !Ref PublicHttpApi
             Path: /check-in
             Method: get
 
@@ -136,3 +125,17 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref UsersTable
+
+Outputs:
+
+  SignUpUrl:
+    Description: Full endpoint of /sign-up
+    Value: !Sub "${ServerlessHttpApi.ApiEndpoint}/sign-up"
+
+  LoginUrl:
+    Description: Full endpoint of /login
+    Value: !Sub "${ServerlessHttpApi.ApiEndpoint}/login"
+
+  CheckInUrl:
+    Description: Full endpoint of /check-in
+    Value: !Sub "${PublicHttpApi.ApiEndpoint}/check-in"
